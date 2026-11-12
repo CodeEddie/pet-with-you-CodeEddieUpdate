@@ -1,5 +1,11 @@
 # pet-with-you 项目开发历程
 
+## 2026-11-12 · CodeEddie v1.0.3
+
+发布首个 Windows x64 安装包，源码标签为 `v1.0.3`，提交为 `3a5cbc3`。运行环境更新为 Electron 45.3.0。[云端验收](https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate/actions/runs/43133929227)通过自动测试、包体审计、全新安装、上游 1.0.2 覆盖升级和卸载检查。
+
+从 [GitHub Releases](https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate/releases/tag/v1.0.3) 下载的 EXE 为 162,901,760 字节，SHA-256 为 `ca8a1bb0b1f3945ad10a61461583213ddefac8ead4815996b06d40e9d3d89c90`，与发布附件中的校验文件一致。
+
 ## CodeEddie Update
 
 从上游 v1.0.2 与 main 的 `c65b97d0` 整理当前本机版源码。迁移原版动画调度、Codex 会话卡片过滤和抖音评论草稿。工作动画通过随源码提供的名称映射读取原版视频，方便新机器直接运行。[README](../README.md) 记录升级点，[视频草稿配置](VIDEO_DRAFT.md) 记录可选依赖。
