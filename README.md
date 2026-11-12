@@ -1,16 +1,21 @@
-# pet-with-you
+# pet-with-you CodeEddie Update
 
-**让一只小伙伴，陪你工作，也陪你发呆。**
+一只可以自主活动、拖拽、点播、聊天和碎碎念的 Windows 桌宠。连接本机 Codex 后，可以在大肥鱼旁查看任务状态与账户额度。
 
-一个运行在 Windows 桌面上的动画桌宠：可以随机玩耍、手动点播、聊天与碎碎念，也可以连接 Codex 桌面客户端，展示任务进度和账户额度。
+这是 CodeEddie 在 [Refining-colors/pet-with-you](https://github.com/Refining-colors/pet-with-you) 基础上整理的衍生版本。基于上游 [v1.0.2](https://github.com/Refining-colors/pet-with-you/releases/tag/v1.0.2) 及 [main 提交 `c65b97d0`](https://github.com/Refining-colors/pet-with-you/commit/c65b97d0ebe96e1a4cafa71f0d520a66a7150e48)。角色和 106 段连续动画来自原作 [PC2005-cloud/dsh-pet](https://github.com/PC2005-cloud/dsh-pet)。代码采用 MIT，角色与动画保留原作署名和非商用条件。详见 [来源与致谢](ATTRIBUTION.md)、[LICENSE](LICENSE) 和 [LICENSE.upstream](LICENSE.upstream)。
 
-> `1.0.2` Windows 版：[下载安装程序](https://github.com/Refining-colors/pet-with-you/releases/tag/v1.0.2)。纯桌宠无需另装 Node.js、Git 或 Codex CLI。由 [Refining-colors](https://github.com/Refining-colors) 维护。项目代码采用 MIT，角色动画按原作条款说明。
+## CodeEddie 版升级点
 
-基于 [PC2005-cloud/dsh-pet](https://github.com/PC2005-cloud/dsh-pet) 改造与扩展，保留原作角色和 106 段动画。原作代码、素材与本项目适配工作的关系见 [来源与致谢](ATTRIBUTION.md)。
+| 功能 | 相比上游 1.0.2 的变化 |
+| --- | --- |
+| 日常小剧场 | 按本机时间在 8 个时段播放原版动作组合，例如晨起伸懒腰、午间吃饭和夜间小憩。空闲时约每 5 分钟安排一组。聊天、拖拽、手动点播与工作反馈优先。 |
+| 工作动画轮换 | 思考、执行、整理、等待、完成、异常共 17 个候选入口，直接复用随附的原版连续视频。持续状态可在同一档内轮换，完成和异常短播。动画和调度在本机执行。 |
+| 失效任务卡片 | 通过只读的 Codex 本地会话索引过滤明确无法恢复的任务，避免点击卡片后出现 `no rollout found for thread id`。索引不可用时保留原有兼容行为。 |
+| 抖音评论草稿 | 右键桌宠选择“发给大肥鱼看”，根据标题、字幕、分享文字或本地视频生成可复制草稿。视频处理可提取字幕、语音和画面，输出会标注依据。链接读取和转录需要相应组件，草稿由用户自行复制使用。见 [视频草稿配置](docs/VIDEO_DRAFT.md)。 |
+
+默认角色的场景与轮换由 [enhancement-config.js](runtime/enhancement-config.js) 控制。可调整 `sceneIntervalSec`，或设为 `enabled: false` 后重启桌宠。其余自定义角色按各自的配置播放。
 
 [快速开始](#快速开始) · [功能介绍](#功能介绍) · [动画图鉴](#动画图鉴) · [模式与连接](#模式与连接) · [常见问题](#常见问题) · [全流程配置](docs/INSTALL.md) · [使用手册](docs/USER_GUIDE.md) · [排错](docs/TROUBLESHOOTING.md)
-
-> 旧版用户退出桌宠后可直接覆盖安装，无需先卸载；升级保留个人设置、已保存密钥及自定义角色。
 
 ## 看看它能做什么
 
@@ -71,9 +76,22 @@
 
 ## 快速开始
 
-### 推荐：下载安装版
+### 运行 CodeEddie 源码版
 
-1. 打开 [Releases 下载页](https://github.com/Refining-colors/pet-with-you/releases/tag/v1.0.2)，下载 **pet-with-you-1.0.2-x64-setup.exe**。
+在 Windows 10/11 x64 上安装 Node.js 22.12 或更新版本，进入克隆或解压后的源码目录：
+
+```powershell
+npm ci
+npm start
+```
+
+`npm start` 使用独立开发数据目录 `.local/`，适合先试用。正式使用可双击 `Start-Pet.cmd`，它使用当前 Windows 用户的桌宠数据目录。切换前从托盘退出原来的桌宠。想连接本机 Codex，可在桌宠设置中配置 GPT 连接，按客户端提示授权所需 Hooks。
+
+本仓库提供源码，可用 `npm run dist:win` 本地构建 Windows 安装程序。
+
+### 上游原版安装程序
+
+1. 打开 [上游 Releases 下载页](https://github.com/Refining-colors/pet-with-you/releases/tag/v1.0.2)，下载 **pet-with-you-1.0.2-x64-setup.exe**。
 2. 双击安装，选择目录和是否创建桌面快捷方式。
 3. 从桌面或开始菜单中的 **pet-with-u** 启动，默认纯桌宠；右键打开设置。
 

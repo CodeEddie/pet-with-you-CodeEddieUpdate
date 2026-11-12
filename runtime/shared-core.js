@@ -954,12 +954,12 @@ function mountContextMenu(opts) {
 //#endregion
 //#region src/shared/chat.ts
 const SEND_TIMEOUT_MS = 18e4;
-async function sendChat(baseUrl, text, onText) {
+async function sendChat(baseUrl, text, onText, commentDraft) {
 	const streaming=typeof onText==='function'&&!!window.PetWhisperStream;
 	const res = await fetch(baseUrl+(streaming?(baseUrl.includes('?')?'&':'?')+'stream=1':''), {
 		method: "POST",
 		headers: { "content-type": "application/json" },
-		body: JSON.stringify({ text }),
+		body: JSON.stringify(commentDraft ? { text, mode: "comment-draft" } : { text }),
 		signal: AbortSignal.timeout(SEND_TIMEOUT_MS)
 	});
 	const raw = streaming?await window.PetWhisperStream.read(res,onText):await res.json().catch(() => null);
@@ -983,6 +983,14 @@ async function sendChat(baseUrl, text, onText) {
 		reply,
 		ts: Number(o.ts) || 0
 	};
+}
+async function sendVideoDraft(baseUrl, input, signal, onProgress) {
+	const stream = window.PetWhisperStream;
+	const res = await fetch(baseUrl+(stream?"&stream=1":""), {
+		method: "POST", headers: {"content-type":"application/json"},
+		body: JSON.stringify(input), signal: AbortSignal.any([signal, AbortSignal.timeout(1080000)])
+	});
+	return stream ? stream.read(res,onProgress) : res.json();
 }
 const CHAT_CSS = [
 	".dsh-pet-chat{position:fixed;z-index:2147483001;width:160px;max-width:80vw;",
@@ -1015,9 +1023,10 @@ function injectChatCss() {
 }
 function mountChatDialog(opts) {
 	injectChatCss();
-	const { petId, x, y, onReply, onClose, clamp } = opts;
+	const { petId, x, y, onReply, onClose, clamp, commentDraft, onBounds } = opts;
 	const baseUrl = opts.baseUrl ?? "/dsh-pet-7340/chat";
 	const withPet = baseUrl + "?pet=" + encodeURIComponent(petId);
+	const videoUrl = baseUrl.replace(/\/chat$/, "/video-draft") + "?pet=" + encodeURIComponent(petId);
 	const c = clamp && Number.isFinite(clamp.x + clamp.y + clamp.w + clamp.h) ? clamp : {
 		x: 0,
 		y: 0,
@@ -1028,9 +1037,9 @@ function mountChatDialog(opts) {
 	root.className = "dsh-pet-chat";
 	const input = document.createElement("textarea");
 	input.className = "dsh-pet-chat-input";
-	input.placeholder = "说点什么…";
+	input.placeholder = commentDraft ? "粘贴抖音分享链接，或输入标题、字幕、剧情" : "说点什么…";
 	input.maxLength = 2e3;
-	input.rows = 1;
+	input.rows = commentDraft ? 3 : 1;
 	let measureCtx = null;
 	const measureText = (text) => {
 		const ctx = measureCtx ?? (measureCtx = document.createElement("canvas").getContext("2d"));
@@ -1039,10 +1048,10 @@ function mountChatDialog(opts) {
 	};
 	const resizeInput = () => {
 		const textW = measureText(input.value || " ");
-		const w = Math.max(CHAT_MIN_W, Math.min(Math.ceil(textW + CHAT_H_PAD), CHAT_MAX_W));
+		const w = commentDraft ? Math.min(CHAT_MAX_W, c.w - 8) : Math.max(CHAT_MIN_W, Math.min(Math.ceil(textW + CHAT_H_PAD), CHAT_MAX_W));
 		root.style.width = w + "px";
 		input.style.height = "auto";
-		input.style.height = Math.max(input.scrollHeight, 22) + "px";
+		input.style.height = (commentDraft ? Math.min(108, Math.max(input.scrollHeight, 76)) : Math.max(input.scrollHeight, 22)) + "px";
 	};
 	input.addEventListener("input", resizeInput);
 	resizeInput();
@@ -1051,25 +1060,132 @@ function mountChatDialog(opts) {
 	err.style.display = "none";
 	const progress=document.createElement('div');progress.className='dsh-pet-chat-progress';progress.hidden=true;
 	root.appendChild(input);
+	let generate, copy, quick, selectFile, useShare, basis, videoRequest, whaleWatch, whaleLogin;
+	let draft = "";
+	if (commentDraft) {
+		root.style.maxHeight = Math.max(0, c.h - 8) + "px";
+		root.style.overflowY = "auto";
+		input.style.overflowY = "auto";
+		input.setAttribute("aria-label", "视频标题、字幕或剧情");
+		progress.setAttribute("aria-label", "评论草稿");
+		const actions = document.createElement("div");
+		actions.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;padding:8px 11px";
+		generate = document.createElement("button");
+		generate.type = "button";
+		generate.textContent = "生成评论草稿";
+		generate.addEventListener("click", () => doSend());
+		copy = document.createElement("button");
+		copy.type = "button";
+		copy.textContent = "复制草稿";
+		copy.hidden = true;
+		copy.addEventListener("click", async () => {
+			try {
+				await (window.petBridge?.copyText ? window.petBridge.copyText(draft) : navigator.clipboard.writeText(draft));
+				copy.textContent = "已复制";
+			} catch {
+				copy.textContent = "复制失败，可选中文字";
+			}
+		});
+		quick = document.createElement("button");
+		quick.type = "button";
+		quick.textContent = "粘贴链接，快速看";
+		quick.addEventListener("click", () => {
+			if (input.value.trim()) doSend({link:input.value.trim()});
+			else input.focus();
+		});
+		basis = document.createElement("div");
+		basis.hidden = true;
+		basis.setAttribute("role","status");
+		basis.style.cssText = "padding:0 11px 6px;color:#526978;font-size:12px";
+		actions.append(generate, quick);
+		if (window.petBridge?.videoPath) {
+			const picker = document.createElement("input");
+			picker.type = "file";
+			picker.accept = ".mp4,.m4v,.mov,.webm,.mkv,.avi";
+			picker.hidden = true;
+			const useFile = file => {
+				const localPath = file && window.petBridge.videoPath(file);
+				if (localPath) doSend({file:localPath});
+			};
+			selectFile = document.createElement("button");
+			selectFile.type = "button";
+			selectFile.textContent = "拖入 / 选择视频";
+			selectFile.addEventListener("click", () => picker.click());
+			picker.addEventListener("change", () => {useFile(picker.files[0]);picker.value="";});
+			root.addEventListener("dragover", event => event.preventDefault());
+			root.addEventListener("drop", event => {event.preventDefault();useFile(event.dataTransfer.files[0]);});
+			actions.append(selectFile,picker);
+		}
+		useShare = document.createElement("button");
+		useShare.type = "button";
+		useShare.textContent = "用分享文案出稿";
+		useShare.hidden = true;
+		useShare.addEventListener("click", () => doSend({shareText:input.value.trim()}));
+		input.addEventListener("input", () => {useShare.hidden=true;});
+		if (window.petBridge) {
+			whaleWatch = document.createElement("button");
+			whaleWatch.type = "button";
+			whaleWatch.textContent = "用抖音会话看";
+			whaleWatch.addEventListener("click", () => {
+				if (input.value.trim()) doSend({whaleLink:input.value.trim()});
+				else input.focus();
+			});
+			whaleLogin = document.createElement("button");
+			whaleLogin.type = "button";
+			whaleLogin.textContent = "登录抖音会话";
+			whaleLogin.addEventListener("click", async () => {
+				whaleLogin.disabled = true;
+				try {
+					const res = await fetch(baseUrl.replace(/\/chat$/, "/whale-login"), {method:"POST",signal:AbortSignal.timeout(10000)});
+					const result = await res.json();
+					if (!result.ok) throw new Error(result.message);
+					basis.textContent = result.message;
+					basis.hidden = false;
+				} catch (error) {
+					err.textContent = error.message;
+					err.style.display = "block";
+				} finally {
+					whaleLogin.disabled = sending;
+					if (!closed) position();
+				}
+			});
+			actions.append(whaleWatch,whaleLogin);
+		}
+		const dismiss = document.createElement("button");
+		dismiss.type = "button";
+		dismiss.textContent = "关闭";
+		dismiss.addEventListener("click", () => close());
+		actions.append(useShare,copy,dismiss);
+		root.appendChild(actions);
+		root.appendChild(basis);
+	}
 	root.appendChild(progress);
 	root.appendChild(err);
 	document.body.appendChild(root);
 	resizeInput();
-	const rr = root.getBoundingClientRect();
-	root.style.left = Math.max(c.x + 4, Math.min(x, c.x + c.w - rr.width - 4)) + "px";
-	root.style.top = Math.max(c.y + 4, Math.min(y, c.y + c.h - rr.height - 4)) + "px";
+	const position = () => {
+		const rect = root.getBoundingClientRect();
+		root.style.left = Math.max(c.x + 4, Math.min(x, c.x + c.w - rect.width - 4)) + "px";
+		root.style.top = Math.max(c.y + 4, Math.min(y, c.y + c.h - rect.height - 4)) + "px";
+		if (onBounds) onBounds(root.getBoundingClientRect());
+	};
+	position();
+	if (commentDraft) input.addEventListener("input", position);
 	let closed = false;
 	let sending = false;
+	let progressTimer;
 	const close = () => {
 		if (closed) return;
 		closed = true;
+		videoRequest?.abort();
+		clearInterval(progressTimer);
 		document.removeEventListener("mousedown", onDocPointerDown, true);
 		document.removeEventListener("keydown", onDocKeyDown, true);
 		root.remove();
 		if (onClose) onClose();
 	};
 	const onDocPointerDown = (e) => {
-		if (closed) return;
+		if (closed || commentDraft) return;
 		if (root.contains(e.target)) return;
 		close();
 	};
@@ -1079,25 +1195,64 @@ function mountChatDialog(opts) {
 	};
 	document.addEventListener("mousedown", onDocPointerDown, true);
 	document.addEventListener("keydown", onDocKeyDown, true);
-	const doSend = () => {
+	const doSend = (videoInput) => {
 		if (closed || sending) return;
 		const text = input.value.trim();
-		if (!text) return;
+		if (!text && !videoInput) return;
+		if (!videoInput && commentDraft && /https:\/\/(?:v\.|www\.)?douyin\.com\//i.test(text)) videoInput = {link:text};
 		sending = true;
 		input.disabled = true;
-		err.style.display='none';progress.hidden=false;progress.textContent='正在回复…';
-		sendChat(withPet, text,partial=>{
+		if (commentDraft) {
+			generate.disabled = true;
+			quick.disabled = true;
+			if (whaleWatch) whaleWatch.disabled = true;
+			if (whaleLogin) whaleLogin.disabled = true;
+			if (selectFile) selectFile.disabled = true;
+			basis.hidden = true;
+			useShare.hidden = true;
+			copy.hidden = true;
+			copy.textContent = "复制草稿";
+		}
+		err.style.display='none';progress.hidden=false;progress.textContent=videoInput?.shareText?'正在根据分享文案生成草稿…':videoInput?'正在读取字幕、音频和画面，长视频可能需要几分钟…':commentDraft?'正在生成草稿…':'正在回复…';
+		if (commentDraft) position();
+		let showProgress;
+		if (videoInput) {
+			videoRequest = new AbortController();
+			const started = Date.now();
+			let stage = progress.textContent;
+			showProgress = (next=stage) => {
+				if (closed) return;
+				stage = next;
+				const seconds = Math.floor((Date.now()-started)/1000);
+				progress.textContent = stage+" · 已用 "+Math.floor(seconds/60)+":"+String(seconds%60).padStart(2,"0");
+				position();
+			};
+			progressTimer = setInterval(showProgress,1000);
+		}
+		const request = videoInput ? sendVideoDraft(videoUrl,videoInput,videoRequest.signal,showProgress) : sendChat(withPet, text,partial=>{
 			if(closed)return;
 			if(window.PetBubbleText)window.PetBubbleText.set(progress,partial,{reveal:true});else progress.textContent=partial;
 			root.style.width=Math.min(CHAT_MAX_W,c.w-8)+'px';
+			if (commentDraft) {position();return;}
 			const rect=root.getBoundingClientRect();
 			root.style.left=Math.max(c.x+4,Math.min(rect.left,c.x+c.w-rect.width-4))+'px';
 			root.style.top=Math.max(c.y+4,Math.min(rect.top,c.y+c.h-rect.height-4))+'px';
-		}).then((state) => {
-			if (state.ok) {
+		},commentDraft);
+		request.then((state) => {
+			clearInterval(progressTimer);
+			if (closed && commentDraft) return;
+			if (state.ok && commentDraft) {
+				draft = state.reply;
+				basis.textContent = state.basis || "";
+				basis.hidden = !state.basis;
+				if (window.PetBubbleText) window.PetBubbleText.set(progress,draft,{reveal:false});
+				else progress.textContent = draft;
+				copy.hidden = false;
+			} else if (state.ok) {
 				close();
 				if (onReply) onReply(state.reply, state.image);
 			} else {
+				if (commentDraft) useShare.hidden = !state.canUseShare;
 				err.textContent = "对话失败：" + (state.message ?? state.reason);
 				err.style.display = "block";
 			}
@@ -1106,13 +1261,23 @@ function mountChatDialog(opts) {
 			err.textContent = "对话异常：" + String(e && e.message ? e.message : e);
 			err.style.display = "block";
 		}).finally(() => {
+			clearInterval(progressTimer);
 			sending = false;
 			input.disabled = false;
-			if (!closed) input.focus();
+			if (!closed && commentDraft) {
+				generate.disabled = false;
+				quick.disabled = false;
+				if (whaleWatch) whaleWatch.disabled = false;
+				if (whaleLogin) whaleLogin.disabled = false;
+				if (selectFile) selectFile.disabled = false;
+				progress.hidden = copy.hidden;
+				position();
+				if (document.hasFocus()) (copy.hidden ? input : copy).focus();
+			} else if (!closed) input.focus();
 		});
 	};
 	input.addEventListener("keydown", (e) => {
-		if (e.key === "Enter") {
+		if (e.key === "Enter" && (!commentDraft || (!e.isComposing && (e.ctrlKey || e.metaKey)))) {
 			e.preventDefault();
 			doSend();
 		}

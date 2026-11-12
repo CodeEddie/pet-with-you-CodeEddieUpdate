@@ -36,15 +36,16 @@ class ApiSettings{
 class ApiClient{
   constructor(settings,{fetcher=fetch}={}){this.settings=settings;this.fetcher=fetcher;this.controllers=new Set();}
   close(){for(const c of this.controllers)c.abort();this.controllers.clear();}
-  async chat(prompt,{onText}={}){
+  async chat(prompt,{onText,images=[]}={}){
     const {issue,networkIssue}=require('./diagnostics.cjs');
     const key=this.settings.key();if(!key)throw issue('key-missing');
     const controller=new AbortController();this.controllers.add(controller);
     try{
       const base=this.settings.value.baseUrl;
       const endpoint=/\/chat\/completions$/i.test(base)?base:base+'/chat/completions';
+      const content=images.length?[{type:"text",text:prompt},...await Promise.all(images.map(async file=>({type:"image_url",image_url:{url:"data:image/jpeg;base64,"+(await require("node:fs/promises").readFile(file)).toString("base64")}})))]:prompt;
       let response;
-      try{response=await this.fetcher(endpoint,{method:'POST',redirect:'error',headers:{'Content-Type':'application/json',Authorization:'Bearer '+key},body:JSON.stringify({model:this.settings.value.model,messages:[{role:'user',content:prompt}],...(onText?{stream:true}:{})}),signal:AbortSignal.any([controller.signal,AbortSignal.timeout(55000)])});}catch(e){throw networkIssue(e);}
+      try{response=await this.fetcher(endpoint,{method:'POST',redirect:'error',headers:{'Content-Type':'application/json',Authorization:'Bearer '+key},body:JSON.stringify({model:this.settings.value.model,messages:[{role:'user',content}],...(onText?{stream:true}:{})}),signal:AbortSignal.any([controller.signal,AbortSignal.timeout(55000)])});}catch(e){throw networkIssue(e);}
       if(response.ok&&onText&&response.headers?.get('content-type')?.includes('text/event-stream')){
         try{return await require('./chat-stream.cjs').readChatStream(response,onText);}catch(e){if(['invalid-json','upstream','response-large','empty-reply'].includes(e.code))throw e;throw networkIssue(e);}
       }

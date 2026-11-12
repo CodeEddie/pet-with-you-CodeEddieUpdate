@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node scripts/dev.cjs",
     "dev": "node scripts/dev.cjs",
-    "test": "node --test test/*.test.cjs",
+    "test": "node scripts/test.cjs",
     "doctor": "node scripts/doctor.cjs",
     "test:ui": "node scripts/run-isolated.cjs test",
     "media:record": "node scripts/run-isolated.cjs demo",
@@ -28,11 +28,11 @@
   "author": "Refining-colors",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Refining-colors/pet-with-you.git"
+    "url": "https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate.git"
   },
-  "homepage": "https://github.com/Refining-colors/pet-with-you",
+  "homepage": "https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate",
   "bugs": {
-    "url": "https://github.com/Refining-colors/pet-with-you/issues"
+    "url": "https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate/issues"
   },
   "license": "MIT"
 }

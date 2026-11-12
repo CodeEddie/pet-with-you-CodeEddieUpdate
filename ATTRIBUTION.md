@@ -1,5 +1,7 @@
 # 来源、署名与素材说明
 
+CodeEddie Update 由 CodeEddie 基于 [Refining-colors/pet-with-you](https://github.com/Refining-colors/pet-with-you) 的 v1.0.2 扩展。下文保留上游的来源与权利说明。本仓库使用系统字体或用户自行导入的字体。
+
 pet-with-you 是在 [PC2005-cloud/dsh-pet](https://github.com/PC2005-cloud/dsh-pet) 基础上开发的 Windows 桌宠适配项目，初始适配基于上游 0.2.12。
 
 ## 原作与本项目的关系

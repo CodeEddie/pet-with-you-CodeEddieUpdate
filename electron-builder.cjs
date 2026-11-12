@@ -11,7 +11,7 @@ module.exports = {
   compression: 'maximum',
   files: [
     ...runtimeFiles, 'assets/**/*', 'runtime/**/*', 'ui/**/*', 'README.md', 'SECURITY.md', 'CHANGELOG.md', 'docs/**/*',
-    '!docs/releases/**/*', '!docs/PROJECT_HISTORY.md', '!docs/VIDEO*.md', '!docs/MEDIA_GUIDE.md', '!docs/WORKSPACE.md',
+    '!docs/releases/**/*', '!docs/PROJECT_HISTORY.md', '!docs/VIDEO_PLAN.md', '!docs/MEDIA_GUIDE.md', '!docs/WORKSPACE.md',
     '!docs/images/**/*', '!assets/fonts/**/*', '!**/node_modules/**/*', '!**/.local/**/*', '!**/*.log',
   ],
   win: { target: [{ target: 'nsis', arch: ['x64'] }], icon: 'build/icon.ico', signAndEditExecutable: true },
@@ -29,5 +29,4 @@ module.exports = {
     installerLanguages: ['zh_CN', 'en_US'],
     license: 'PREVIEW-NOTICE.txt',
   },
-  publish: [{ provider: 'github', owner: 'Refining-colors', repo: 'pet-with-you', releaseType: 'release' }],
 };

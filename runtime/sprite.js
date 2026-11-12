@@ -107,6 +107,7 @@ class PetSprite {
     //   光标移到输入框（不在身体命中区）就会被 onMouseMove 翻回穿透，点击全被透传）
     this.chatClose = null;
     this.chatOpen = false;
+    this.draftDialog = null;
 
     // DOM：sprite 钉在窗口内 (margin.l, margin.t)；宠物"位置"= sprite 位置，窗口随余量外扩
     this.el = document.createElement('div');
@@ -379,6 +380,7 @@ class PetSprite {
     // 表现就是"点了没反应"（#62 报告的就是 web 端同一类问题，桌面端此前完全没有兜底）。
     const loadGuard = (why) => {
       if (!this.pending || this.pending.gen !== gen) return;
+      this.onAnimationLoadFailed?.(next, why);
       this.pending = null;
       this.manualPlaying = false;
       window.setTimeout(() => {
@@ -972,7 +974,7 @@ class PetSprite {
    * 位移分不清"拖拽跟手"和"漫游/抛掷"）。所以由渲染端上报，主进程的兜底通道据此闭嘴。
    */
   inputBusy() {
-    return this.dragState.active || this.menuOpen || this.chatOpen || this.bubbleHover || this.bubbleSelecting;
+    return this.dragState.active || this.menuOpen || (this.chatOpen && !this.draftDialog) || this.bubbleHover || this.bubbleSelecting;
   }
 
   /**
@@ -1003,7 +1005,7 @@ class PetSprite {
       return;
     }
     // 右键菜单/对话弹窗开启：整窗保持可交互（悬停菜单项/点输入框都不触发穿透翻转）；关闭后恢复命中区判定
-    if (this.menuOpen || this.chatOpen) {
+    if (this.menuOpen || (this.chatOpen && !this.draftDialog)) {
       this.setInteractive(true);
       return;
     }
@@ -1018,7 +1020,9 @@ class PetSprite {
     if(this.bubbleHover!==overBubble){this.bubbleHover=overBubble;this.syncInputBusy();this.updateReplyTimer();this.updateQuotaTimer();}
     const px = wx - this.margin.l;
     const py = wy - this.margin.t;
-    this.setInteractive(overBubble||(px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h));
+    const draftRect = this.draftDialog?.getBoundingClientRect();
+    const overDraft = draftRect && wx >= draftRect.left && wx < draftRect.right && wy >= draftRect.top && wy < draftRect.bottom;
+    this.setInteractive(overDraft||overBubble||(px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h));
   }
 
   onClick() {
@@ -1141,7 +1145,7 @@ class PetSprite {
     ]},{ label:'显示托盘图标',action:'show-tray' }];
     tools.push({ label: '查看额度 / 用量', action: 'show-balance' });
     {
-      tools.push({ label: '碎碎念', action: 'whisper' },{ label: '对话', action: 'chat' });
+      tools.push({ label: '碎碎念', action: 'whisper' },{ label: '对话', action: 'chat' },{ label: '发给大肥鱼看', action: 'comment-draft' });
     }
     tools.push({ label: '回到初始位置', action: 'home' });
     const tree = tools.concat(S.buildMenuTree(this.animations));
@@ -1196,8 +1200,8 @@ class PetSprite {
       this.showWhisperFromMenu(); // 立即让 host 强制新生成一句并展示（绕过节流；展示路径与周期触发一致）
       return;
     }
-    if (leaf.action === 'chat') {
-      this.showChatFromMenu(); // 打开对话弹窗（记忆经 host /chat 读写，浏览器/桌面同一实例共享）
+    if (leaf.action === 'chat' || leaf.action === 'comment-draft') {
+      this.showChatFromMenu(leaf.action === 'comment-draft');
       return;
     }
     if (leaf.action === 'home') {
@@ -1291,7 +1295,7 @@ class PetSprite {
   // 弹窗跟随宠物：基准是**身体命中区** this.hit（与气泡同一定位源——桌宠在视频中间，
   // 视频框右上角 ≠ 宠物右上角），取身体右上角，超出视口自动夹回（窗口右侧外扩区容纳）；
   // 弹窗是窗口内 DOM，期间整窗保持可交互（可点输入框），关闭后恢复命中区穿透。
-  showChatFromMenu() {
+  showChatFromMenu(commentDraft = false) {
     if (this.chatClose) {
       this.chatClose();
       this.chatClose = null;
@@ -1300,6 +1304,8 @@ class PetSprite {
     const m = S.mountChatDialog({
       petId: this.pet.id,
       baseUrl: BASE + '/chat',
+      commentDraft,
+      onBounds: commentDraft ? r => window.petBridge?.setDraftRect({x:toScreen(r.x),y:toScreen(r.y),width:toScreen(r.width),height:toScreen(r.height)}) : undefined,
       x: Math.max(4, this.hit.getBoundingClientRect().right + 6),
       y: Math.max(4, this.hit.getBoundingClientRect().top + 6),
       // 弹窗同菜单：只允许在「窗口 ∩ 工作区」内显示，贴边时不被屏幕裁掉（#41）
@@ -1310,12 +1316,15 @@ class PetSprite {
       onClose: () => {
         this.chatClose = null;
         this.chatOpen = false;
+        if (commentDraft) window.petBridge?.setDraftRect(null);
+        this.draftDialog = null;
         window.__dshPetDebug.chatOpen = false;
         this.syncInputBusy(); // 弹窗关：交还常规判定（菜单还开着的话仍保持忙，见 inputBusy）
         if (!this.menuOpen) this.setInteractive(false); // 弹窗关了且无菜单：恢复命中区穿透
       },
     });
     this.chatClose = m.close;
+    this.draftDialog = commentDraft ? m.el : null;
     this.chatOpen = true; // 穿透守卫：弹窗期间整窗保持可交互，光标移到输入框不被翻回穿透
     window.__dshPetDebug.chatOpen = true;
     this.syncInputBusy();

@@ -47,3 +47,8 @@ api-settings.json.profiles*
 quota.json.profiles*
 
 media-output/
+video-tools/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.jsonl

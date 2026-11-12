@@ -69,7 +69,7 @@ class CodexClient extends EventEmitter {
     });
   }
   async limits(){await this.start();return this.request('account/rateLimits/read');}
-  async chat(prompt,{onText,fast=true}={}){
+  async chat(prompt,{onText,fast=true,images=[]}={}){
     const requestAt=Date.now();
     await this.start();
     const generation=this.generation;
@@ -117,7 +117,7 @@ class CodexClient extends EventEmitter {
         }
       };
       this.on('notification',onEvent);this.on('connectionLost',onLost);
-      this.request('turn/start',{threadId:thread.id,input:[{type:'text',text:prompt}],approvalPolicy:'never',...(effort?{effort}:{})}).then(r=>{if(!r?.turn?.id)throw issue('gpt-protocol');turnId=r.turn.id;if(finished)this.request('turn/interrupt',{threadId:thread.id,turnId}).catch(()=>{});}).catch(e=>{clean();reject(diagnostic(codexIssue(e,'turn/start')));});
+      this.request('turn/start',{threadId:thread.id,input:[{type:'text',text:prompt},...images.map(path=>({type:'localImage',path}))],approvalPolicy:'never',...(effort?{effort}:{})}).then(r=>{if(!r?.turn?.id)throw issue('gpt-protocol');turnId=r.turn.id;if(finished)this.request('turn/interrupt',{threadId:thread.id,turnId}).catch(()=>{});}).catch(e=>{clean();reject(diagnostic(codexIssue(e,'turn/start')));});
     });
     try { return await result; }
     finally { this.request('thread/unsubscribe',{threadId:thread.id}).catch(()=>{}); }

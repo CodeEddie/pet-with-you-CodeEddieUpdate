@@ -1,7 +1,23 @@
 const fs=require('node:fs'),path=require('node:path');
 const cleanTitle=value=>typeof value==='string'?value.replace(/[\x00-\x1f\x7f]/g,' ').trim().slice(0,160):'';
 class ThreadMetadata{
-  constructor(home){this.home=home;this.cache=new Map();this.sourceCache=new Map();}
+  constructor(home){this.home=home;this.cache=new Map();this.sourceCache=new Map();this.rolloutCache=new Map();}
+  isRecoverable(id){
+    const cached=this.rolloutCache.get(id);if(cached&&Date.now()-cached.at<5000)return cached.value;
+    try{
+      const name=fs.readdirSync(this.home).filter(n=>/^state_\d+\.sqlite$/.test(n)).sort((a,b)=>Number(b.match(/\d+/)[0])-Number(a.match(/\d+/)[0]))[0];
+      if(!name)return null; // No readable index means unknown, not a missing conversation.
+      const {DatabaseSync}=require('node:sqlite'),db=new DatabaseSync(path.join(this.home,name),{readOnly:true});
+      try{
+        db.exec('PRAGMA busy_timeout=50');
+        const row=db.prepare('SELECT rollout_path FROM threads WHERE id = ?').get(id);
+        const value=!!(row&&typeof row.rollout_path==='string'&&row.rollout_path&&fs.existsSync(row.rollout_path));
+        this.rolloutCache.set(id,{value,at:Date.now()});
+        if(this.rolloutCache.size>256)this.rolloutCache.delete(this.rolloutCache.keys().next().value);
+        return value;
+      }finally{db.close();}
+    }catch{return null;}
+  }
   isSubagent(id){
     const cached=this.sourceCache.get(id);if(cached&&Date.now()-cached.at<5000)return cached.value;
     try{

@@ -332,6 +332,7 @@ let pointerFallbackPaused = false;
  */
 const inputBusy = new Map();
 const bubbleRects = new Map();
+const draftRects = new Map();
 const spriteGeometry = new Map();
 
 /**
@@ -483,9 +484,10 @@ function createPetWindows() {
       const b = win.getBounds();
       if (b.width < 8 || b.height < 8) return; // 尺寸还没落定（renderer 首帧上报前）
       const ignoring = windowIgnore.get(win.id) !== false;
-      const point=screen.getCursorScreenPoint(),r=bubbleRects.get(win.id);
-      const overBubble=r&&point.x>=b.x+r.x&&point.x<=b.x+r.x+r.width&&point.y>=b.y+r.y&&point.y<=b.y+r.y+r.height;
-      const next = decideWindowIgnore(b, point, ignoring, inputBusy.get(win.id) === true||overBubble, spriteGeometry.get(win.id));
+      const point=screen.getCursorScreenPoint();
+      const overControl=[bubbleRects.get(win.id),draftRects.get(win.id)].some(r=>
+        r&&point.x>=b.x+r.x&&point.x<b.x+r.x+r.width&&point.y>=b.y+r.y&&point.y<b.y+r.y+r.height);
+      const next = decideWindowIgnore(b, point, ignoring, inputBusy.get(win.id) === true||overControl, spriteGeometry.get(win.id));
       if (next !== ignoring) setWindowIgnore(win, next);
     }, POINTER_POLL_MS);
     win.on('closed', () => {
@@ -499,6 +501,7 @@ function createPetWindows() {
       windowIgnore.delete(win.id);
       inputBusy.delete(win.id);
       bubbleRects.delete(win.id);
+      draftRects.delete(win.id);
       spriteGeometry.delete(win.id);
     });
     win
@@ -749,10 +752,11 @@ app.whenReady().then(() => {
     if(![...windows.values()].includes(win)||typeof text!=='string'||text.length>100000)throw new Error('无法复制此内容');
     electronApi.clipboard.writeText(text);return true;
   });
-  ipcMain.on('pet:bubble-rect',(event,rect)=>{
+  ipcMain.on('pet:bubble-rect',(event,rect,kind)=>{
     const win=BrowserWindow.fromWebContents(event.sender);if(![...windows.values()].includes(win))return;
-    if(!rect){bubbleRects.delete(win.id);return;}
-    if(['x','y','width','height'].every(k=>Number.isFinite(rect[k])&&Math.abs(rect[k])<10000))bubbleRects.set(win.id,rect);
+    const regions=kind==="draft"?draftRects:bubbleRects;
+    if(!rect){regions.delete(win.id);return;}
+    if(['x','y','width','height'].every(k=>Number.isFinite(rect[k])&&Math.abs(rect[k])<10000))regions.set(win.id,rect);
   });
 
   // 渲染端正拿着鼠标输入（拖拽中 / 菜单开着 / 对话弹窗开着）：兜底轮询据此绝不翻回穿透。

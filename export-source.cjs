@@ -5,6 +5,7 @@ files.push('bootstrap.cjs','hook-command.cjs','hook.cmd','Create-Shortcut.cmd','
 files.push('LICENSE','settings-store.cjs','detached-launch.cjs','launch-detached.ps1','client-launcher.cjs','client-launcher-entry.cjs');
 files.push('pet-shortcut.cjs');
 files.push('codex-network.cjs');
+files.push('video-draft.cjs','whale-video.cjs');
 files.push('legacy-package-data.cjs','shell-shortcut.ps1', 'repair-shortcuts.ps1','window-observer.cjs');
 const directories=['assets','runtime','ui','test','docs','scripts','.github','build'];
 // Installation content is separate from the source export and developer documentation.

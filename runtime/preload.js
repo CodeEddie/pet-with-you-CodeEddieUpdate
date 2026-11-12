@@ -17,10 +17,12 @@
 //       onFlightStates：订阅主进程广播的全量宠物状态（碰撞检测用其它宠物的最新位置/速度）；
 //       reportCollide：本窗飞行方检测到撞到 targetId → 主进程把动量结果转发给目标窗；
 //       onPetHit：订阅「你被撞了」→ 用新初速 startThrow 抛出去（与浏览器 onHit 同语义）。
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 contextBridge.exposeInMainWorld('petBridge', {
+  videoPath(file){return webUtils.getPathForFile(file);},
   copyText(text){return ipcRenderer.invoke('pet:copy-text',text);},
+  setDraftRect(rect){ipcRenderer.send('pet:bubble-rect',rect,'draft');},
   setBubbleRect(rect){ipcRenderer.send('pet:bubble-rect',rect);},
   setBounds(x, y, width, height, boxX, boxY, size, bottomPad, vx, vy, centerX, feetY) {
     ipcRenderer.send('pet:set-bounds', { x, y, width, height, boxX, boxY, size, bottomPad, vx, vy, centerX, feetY });
