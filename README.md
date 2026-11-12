@@ -4,6 +4,8 @@
 
 这是 CodeEddie 在 [Refining-colors/pet-with-you](https://github.com/Refining-colors/pet-with-you) 基础上整理的衍生版本。基于上游 [v1.0.2](https://github.com/Refining-colors/pet-with-you/releases/tag/v1.0.2) 及 [main 提交 `c65b97d0`](https://github.com/Refining-colors/pet-with-you/commit/c65b97d0ebe96e1a4cafa71f0d520a66a7150e48)。角色和 106 段连续动画来自原作 [PC2005-cloud/dsh-pet](https://github.com/PC2005-cloud/dsh-pet)。代码采用 MIT，角色与动画保留原作署名和非商用条件。详见 [来源与致谢](ATTRIBUTION.md)、[LICENSE](LICENSE) 和 [LICENSE.upstream](LICENSE.upstream)。
 
+**Windows 10/11 x64 安装包** [下载 CodeEddie v1.0.3](https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate/releases/tag/v1.0.3)
+
 ## CodeEddie 版升级点
 
 | 功能 | 相比上游 1.0.2 的变化 |
@@ -76,6 +78,14 @@
 
 ## 快速开始
 
+### 安装 CodeEddie 版
+
+1. 从 [v1.0.3 发布页](https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate/releases/tag/v1.0.3) 下载 **pet-with-you-1.0.3-x64-setup.exe**。
+2. 已有桌宠的用户先从托盘退出，再运行安装程序并沿用原安装目录。
+3. 从桌面或开始菜单的 **pet-with-u** 启动，右键打开设置。
+
+安装包自带运行环境。EXE 尚未签名，下载页附有 SHA-256 校验文件。详见 [安装与升级手册](docs/INSTALL.md)。
+
 ### 运行 CodeEddie 源码版
 
 在 Windows 10/11 x64 上安装 Node.js 22.12 或更新版本，进入克隆或解压后的源码目录：
@@ -87,15 +97,7 @@ npm start
 
 `npm start` 使用独立开发数据目录 `.local/`，适合先试用。正式使用可双击 `Start-Pet.cmd`，它使用当前 Windows 用户的桌宠数据目录。切换前从托盘退出原来的桌宠。想连接本机 Codex，可在桌宠设置中配置 GPT 连接，按客户端提示授权所需 Hooks。
 
-本仓库提供源码，可用 `npm run dist:win` 本地构建 Windows 安装程序。
-
-### 上游原版安装程序
-
-1. 打开 [上游 Releases 下载页](https://github.com/Refining-colors/pet-with-you/releases/tag/v1.0.2)，下载 **pet-with-you-1.0.2-x64-setup.exe**。
-2. 双击安装，选择目录和是否创建桌面快捷方式。
-3. 从桌面或开始菜单中的 **pet-with-u** 启动，默认纯桌宠；右键打开设置。
-
-安装版自带运行环境，不需要下载源码。`Source code (zip)` 是开发者使用的源码压缩包。当前安装包未签名，可能出现未知发布者提示；下载页附 SHA-256 校验值。升级前退出桌宠，安装新版后保留原设置。详见 [完整安装手册](docs/INSTALL.md)。
+可用 `npm run dist:win` 本地构建 Windows 安装程序。
 
 ### 运行环境
 

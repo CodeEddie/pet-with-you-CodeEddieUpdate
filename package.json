@@ -1,9 +1,10 @@
 {
   "name": "pet-with-you",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "main": "bootstrap.cjs",
   "scripts": {
+    "postinstall": "install-electron",
     "start": "node scripts/dev.cjs",
     "dev": "node scripts/dev.cjs",
     "test": "node scripts/test.cjs",
@@ -18,7 +19,7 @@
     "media:catalog": "node scripts/build-animation-catalog.cjs"
   },
   "devDependencies": {
-    "electron": "^41.10.7",
+    "electron": "45.3.0",
     "electron-builder": "^26.15.3"
   },
   "description": "Windows desktop pet with optional Codex task feedback and OpenAI-compatible chat",

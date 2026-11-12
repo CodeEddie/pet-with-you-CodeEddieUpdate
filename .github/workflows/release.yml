@@ -1,0 +1,118 @@
+name: Windows release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Check release version
+        shell: pwsh
+        run: |
+          $package = Get-Content package.json -Raw | ConvertFrom-Json
+          $lock = Get-Content package-lock.json -Raw | ConvertFrom-Json
+          if ($env:RELEASE_TAG -cnotmatch '^v[0-9]+\.[0-9]+\.[0-9]+$' -or
+              $env:RELEASE_TAG -cne "v$($package.version)" -or $lock.version -ne $package.version) {
+            throw 'Release tag, package and lock versions must match.'
+          }
+          if (-not (Test-Path -LiteralPath "docs/releases/$env:RELEASE_TAG.md")) {
+            throw 'Release notes are missing.'
+          }
+      - run: npm ci
+      - run: npm test
+      - run: npm run check:docs
+      - run: npm run audit:source
+      - run: npm audit --audit-level=high
+      - run: npm run dist:win
+      - run: node scripts/audit-package.cjs
+      - name: Verify fresh install and uninstall
+        shell: pwsh
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-installer.ps1
+      - name: Verify upgrade from upstream v1.0.2
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $previous = Join-Path $env:RUNNER_TEMP 'pet-upstream-v1.0.2'
+          gh release download v1.0.2 --repo Refining-colors/pet-with-you --pattern pet-with-you-1.0.2-x64-setup.exe --dir $previous
+          if ($LASTEXITCODE -ne 0) { throw 'Upstream installer download failed.' }
+          $oldInstaller = Join-Path $previous 'pet-with-you-1.0.2-x64-setup.exe'
+          $hash = (Get-FileHash -LiteralPath $oldInstaller -Algorithm SHA256).Hash
+          if ($hash -ine '460bfa115b98f83ffaa66784aa82a4147cbe73c3980d2803711b5ae8280e2eb3') {
+            throw 'Upstream installer checksum mismatch.'
+          }
+          powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-installer.ps1 -PreviousInstaller $oldInstaller
+          if ($LASTEXITCODE -ne 0) { throw 'Upstream upgrade verification failed.' }
+      - name: Prepare release files
+        shell: pwsh
+        run: |
+          $version = $env:RELEASE_TAG.Substring(1)
+          $installer = "pet-with-you-$version-x64-setup.exe"
+          New-Item -ItemType Directory -Path 'release' | Out-Null
+          Copy-Item -LiteralPath "dist/$installer" -Destination 'release'
+          Copy-Item -LiteralPath 'docs/releases/INSTALL.txt' -Destination 'release/INSTALL.txt'
+          Copy-Item -LiteralPath "docs/releases/$env:RELEASE_TAG.md" -Destination 'release/NOTES.md'
+          $hash = (Get-FileHash -LiteralPath "release/$installer" -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $installer" | Set-Content -LiteralPath 'release/SHA256SUMS.txt' -Encoding ascii
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-windows-release
+          path: release/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: build
+    if: github.repository == 'CodeEddie/pet-with-you-CodeEddieUpdate'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-windows-release
+          path: release
+      - name: Publish verified installer
+        working-directory: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          installer="pet-with-you-${RELEASE_TAG#v}-x64-setup.exe"
+          sha256sum --check SHA256SUMS.txt
+          if draft=$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft 2>/dev/null); then
+            if [[ "$draft" != true ]]; then
+              echo "Release already published."
+              exit 1
+            fi
+          else
+            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --draft \
+              --title "pet-with-you CodeEddie Update $RELEASE_TAG" --notes-file NOTES.md
+          fi
+          gh release upload "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            "$installer" SHA256SUMS.txt INSTALL.txt --clobber
+          gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest

@@ -17,6 +17,13 @@ visit(root);
 assert.ok(!fs.existsSync(path.join(root,'docs/images')),'Documentation gallery must not inflate the runtime package');
 assert.equal(require(path.join(root,'package.json')).version,require('../package.json').version);
 for(const name of ['LICENSE','LICENSE.upstream','ATTRIBUTION.md','build/icon.ico','build/codex-withu.ico'])assert.ok(fs.existsSync(path.join(root,name)),name+' missing');
+for (const name of [
+  'runtime/enhancement-config.js', 'runtime/enhancement-core.js', 'runtime/enhancement-runtime.js',
+  'thread-metadata.cjs', 'video-draft.cjs', 'whale-video.cjs', 'docs/VIDEO_DRAFT.md',
+]) {
+  assert.deepEqual(fs.readFileSync(path.join(root, name)), fs.readFileSync(path.join(__dirname, '..', name)),
+    'Packaged CodeEddie component differs from tagged source: ' + name);
+}
 assert.equal(fs.readdirSync(path.join(root,'assets/webm')).filter(x=>x.endsWith('.webm')).length,106);
 const crypto=require('node:crypto');
 const hash=file=>crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
