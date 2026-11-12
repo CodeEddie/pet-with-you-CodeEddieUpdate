@@ -1,0 +1,71 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs'), path = require('node:path'), os = require('node:os');
+const { execFileSync } = require('node:child_process');
+const root = path.resolve(__dirname, '..');
+
+test('runtime manifest contains migration and custom-pet configuration without source build helpers',()=>{
+  const {runtimeFiles}=require('../export-source.cjs');
+  assert.equal(runtimeFiles.length,new Set(runtimeFiles).size);
+  for(const name of ['legacy-package-data.cjs','settings-store.cjs','config.mjs','project.cjs','hook.cmd'])assert.ok(runtimeFiles.includes(name));
+  for(const name of ['export-source.cjs','electron-builder.cjs','launch.cjs'])assert.ok(!runtimeFiles.includes(name));
+  for(const name of runtimeFiles)assert.ok(fs.existsSync(path.join(root,name)),name);
+});
+
+test('unattended source installation exits promptly when Node is missing', { skip: process.platform !== 'win32' }, () => {
+  const { spawnSync } = require('node:child_process');
+  const env = { ...process.env, PATH: path.join(process.env.WINDIR, 'System32') };
+  for (const key of Object.keys(env)) if (key.toLowerCase() === 'path' && key !== 'PATH') delete env[key];
+  const result = spawnSync(process.env.ComSpec, ['/d', '/c', 'Install-Pet.cmd --no-shortcut'], { cwd: root, env, input: '', encoding: 'utf8', timeout: 5000, windowsHide: true });
+  assert.ifError(result.error);
+  assert.equal(result.status, 1);
+  assert.match(result.stdout, /Please install Node.js/);
+  assert.doesNotMatch(result.stdout, /Press any key/);
+});
+
+test('desktop shortcut resolves its moved source folder and preserves the tray icon', { skip: process.platform !== 'win32' }, t => {
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), "pet shortcut ' 移动目录 🌊-"));
+  t.after(() => fs.rmSync(folder, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(folder, 'scripts')); fs.mkdirSync(path.join(folder, 'build'));
+  for (const file of ['shell-shortcut.ps1', 'scripts/create-shortcut.ps1', 'launcher.vbs', 'build/icon.ico']) fs.copyFileSync(path.join(root, file), path.join(folder, file));
+  execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', path.join(folder, 'scripts/create-shortcut.ps1'), '-DestinationDirectory', folder], { windowsHide: true });
+  const literal = value => "'" + value.replaceAll("'", "''") + "'";
+  const command = ". " + literal(path.join(root,'shell-shortcut.ps1')) + ";$s=New-PetShortcut " + literal(path.join(folder, 'pet-with-u.lnk')) + "; [Console]::OutputEncoding=[System.Text.Encoding]::UTF8; @{target=$s.TargetPath;arguments=$s.Arguments;working=$s.WorkingDirectory;icon=$s.IconLocation}|ConvertTo-Json -Compress";
+  const link = JSON.parse(execFileSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', command], { encoding: 'utf8', windowsHide: true }).replace(/^\uFEFF/, ''));
+  assert.match(link.target, /wscript\.exe$/i);
+  // PowerShell expands 8.3 aliases (e.g. RUNNER~1) in its script directory.
+  // Validate the referenced files rather than requiring the same path spelling.
+  const launcherArgument = /^"([^"]+)" normal "([^"]+)"$/.exec(link.arguments);
+  assert.ok(launcherArgument, 'Unexpected shortcut arguments: ' + link.arguments);
+  assert.equal(fs.realpathSync.native(launcherArgument[1]), fs.realpathSync.native(path.join(folder, 'launcher.vbs')));
+  assert.equal(fs.realpathSync.native(link.working), fs.realpathSync.native(folder));
+  assert.equal(fs.realpathSync.native(link.icon.slice(0, link.icon.lastIndexOf(','))), fs.realpathSync.native(path.join(folder, 'build/icon.ico')));
+  assert.ok(fs.existsSync(launcherArgument[2]), 'The selected Node executable must exist');
+  const original=fs.readFileSync(path.join(folder,'pet-with-u.lnk'));
+  execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', path.join(folder, 'scripts/create-shortcut.ps1'), '-DestinationDirectory', folder], { windowsHide: true });
+  assert.deepEqual(fs.readFileSync(path.join(folder,'pet-with-u.lnk')),original,'reinstall must preserve an existing shortcut');
+  assert.ok(fs.existsSync(path.join(folder,'pet-with-u (2).lnk')));
+});
+
+test('packaged hooks use the bundled command helper, while source hooks use the selected Node', () => {
+  const { hookCommand } = require('../hook-command.cjs');
+  const installed = hookCommand({ root: path.join('space path', 'resources', 'app'), packaged: true });
+  assert.match(installed.marker, /resources\/app\/hook\.cmd$/);
+  assert.ok(require('../hook-command.cjs').ownsHook(installed.command, path.join('space path', 'resources', 'app')));
+  const source = hookCommand({ root, packaged: false, executable: 'C:/fixture node/node.exe' });
+  assert.ok(Buffer.from(source.command.split(' ').at(-1),'base64').toString('utf16le').includes("& 'C:/fixture node/node.exe'"));
+  assert.match(source.marker, /hook\.cjs$/);
+});
+
+for(const name of ['icon.ico','codex-withu.ico'])test(name+' includes common Windows sizes with PNG frames', () => {
+  const bytes = fs.readFileSync(path.join(root, 'build',name));
+  assert.equal(bytes.readUInt16LE(2), 1);
+  const count = bytes.readUInt16LE(4), sizes = [];
+  for (let i = 0; i < count; i++) {
+    const offset = 6 + i * 16, size = bytes[offset] || 256;
+    assert.equal(size, bytes[offset + 1] || 256); sizes.push(size);
+    const start = bytes.readUInt32LE(offset + 12);
+    assert.equal(bytes.subarray(start + 1, start + 4).toString(), 'PNG');
+  }
+  assert.deepEqual(sizes, [16, 24, 32, 48, 64, 128, 256]);
+});

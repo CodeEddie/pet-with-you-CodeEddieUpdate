@@ -1,0 +1,7 @@
+{
+  "name": "pet-with-you-runtime",
+  "version": "1.0.0",
+  "private": true,
+  "description": "pet-with-you transparent pet window runtime",
+  "main": "main.js"
+}
