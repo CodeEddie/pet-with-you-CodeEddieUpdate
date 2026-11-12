@@ -33,6 +33,24 @@ $env:PET_TEST_DATA_DIR = $petData
 New-Item -ItemType Directory -Path $env:CODEX_HOME -Force | Out-Null
 Set-Content -LiteralPath (Join-Path $petData 'retain.txt') -Value 'Preserve user data.'
 . (Join-Path $petRoot 'shell-shortcut.ps1')
+function Wait-TestPetStopped([string]$Executable) {
+  # Electron's main process can close before its helpers release the installed executable.
+  $petDeadline = [DateTime]::UtcNow.AddSeconds(20)
+  do {
+    $petLive = @(Get-Process -Name 'pet-with-you' -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $Executable })
+    if ($petLive.Count -eq 0) {
+      try {
+        $petHandle = [IO.File]::Open($Executable, [IO.FileMode]::Open, [IO.FileAccess]::Write, [IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete)
+        $petHandle.Dispose()
+        return
+      } catch [IO.IOException] {
+        if ([DateTime]::UtcNow -ge $petDeadline) { throw }
+      }
+    }
+    Start-Sleep -Milliseconds 250
+  } while ([DateTime]::UtcNow -lt $petDeadline)
+  throw 'Fixture application or executable is still in use after shutdown.'
+}
 function Uninstall-TestPet {
   $petUninstaller = Join-Path $petInstall 'Uninstall pet-with-you.exe'
   if (Test-Path -LiteralPath $petUninstaller) {
@@ -77,6 +95,8 @@ try {
     if ($PreviousInstaller) {
       & node (Join-Path $PSScriptRoot 'verify-data-upgrade.cjs') seed $petExe $petTemp
       if ($LASTEXITCODE -ne 0) { throw 'Old-version migration fixture could not be created.' }
+      Wait-TestPetStopped $petExe
+      if ((Get-Content -LiteralPath $petHooksPath -Raw -Encoding UTF8).Trim() -ne $petHooks.Trim()) { throw 'The previous app changed the Hooks fixture before upgrade.' }
     }
     $petSavedLink = New-PetShortcut $petSavedShortcut
     $petSavedLink.TargetPath = $petExe
@@ -86,9 +106,17 @@ try {
     $petSavedLink.Save()
     # No /D: a normal upgrade must discover and reuse the registered location.
     $petProcess = Start-Process -FilePath $Installer -ArgumentList $petOptions -WindowStyle Hidden -Wait -PassThru
+    if ($petProcess.ExitCode -ne 0) {
+      $petPreflight = Join-Path $env:TEMP 'pet-with-you-install-check.txt'
+      if ($petProcess.ExitCode -eq 60001 -and (Test-Path -LiteralPath $petPreflight)) {
+        Get-Content -LiteralPath $petPreflight | Write-Output
+      }
+      throw "In-place upgrade installer exited with code $($petProcess.ExitCode) (desktop shortcut=$petShortcut)."
+    }
     $petNewVersion = (Get-Content -LiteralPath (Join-Path $petInstall 'resources\app\package.json') -Raw | ConvertFrom-Json).version
     $petExpectedVersion = (Get-Content -LiteralPath (Join-Path $petRoot 'package.json') -Raw | ConvertFrom-Json).version
-    if ($petProcess.ExitCode -ne 0 -or $petNewVersion -ne $petExpectedVersion -or (Get-Content -LiteralPath $petHooksPath -Raw -Encoding UTF8).Trim() -ne $petHooks.Trim()) { throw 'In-place upgrade failed or changed Hooks.' }
+    if ($petNewVersion -ne $petExpectedVersion) { throw "In-place upgrade installed version $petNewVersion instead of $petExpectedVersion." }
+    if ((Get-Content -LiteralPath $petHooksPath -Raw -Encoding UTF8).Trim() -ne $petHooks.Trim()) { throw 'In-place upgrade changed Hooks.' }
     if ((Test-Path -LiteralPath (Join-Path $petInstall 'pet-with-you\pet-with-you.exe')) -or -not (Test-Path -LiteralPath (Join-Path $petData 'retain.txt'))) { throw 'Upgrade nested the installation or lost user data.' }
     foreach ($petLinkPath in @($petMenu, $petJointDesktop, $petJointMenu)) {
       if ((New-PetShortcut $petLinkPath).TargetPath -ne $petExe) { throw 'Upgrade broke an existing shortcut.' }
