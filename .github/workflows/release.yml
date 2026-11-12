@@ -64,6 +64,22 @@ jobs:
           }
           powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-installer.ps1 -PreviousInstaller $oldInstaller
           if ($LASTEXITCODE -ne 0) { throw 'Upstream upgrade verification failed.' }
+      - name: Verify upgrade from CodeEddie v1.0.3
+        if: github.repository == 'CodeEddie/pet-with-you-CodeEddieUpdate'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $previous = Join-Path $env:RUNNER_TEMP 'pet-codeeddie-v1.0.3'
+          gh release download v1.0.3 --repo $env:GITHUB_REPOSITORY --pattern pet-with-you-1.0.3-x64-setup.exe --dir $previous
+          if ($LASTEXITCODE -ne 0) { throw 'CodeEddie v1.0.3 installer download failed.' }
+          $oldInstaller = Join-Path $previous 'pet-with-you-1.0.3-x64-setup.exe'
+          $hash = (Get-FileHash -LiteralPath $oldInstaller -Algorithm SHA256).Hash
+          if ($hash -ine 'ca8a1bb0b1f3945ad10a61461583213ddefac8ead4815996b06d40e9d3d89c90') {
+            throw 'CodeEddie v1.0.3 installer checksum mismatch.'
+          }
+          powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-installer.ps1 -PreviousInstaller $oldInstaller
+          if ($LASTEXITCODE -ne 0) { throw 'CodeEddie v1.0.3 upgrade verification failed.' }
       - name: Prepare release files
         shell: pwsh
         run: |

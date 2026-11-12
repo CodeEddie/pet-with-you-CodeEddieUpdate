@@ -1,12 +1,12 @@
 # 从零安装与配置 pet-with-you
 
-当前公开安装包为 **CodeEddie v1.0.3**，仓库源码为 **v1.0.4**。普通用户可直接下载安装程序。需要运行源码版的用户可按第一至第四步操作。
+当前版本为 **CodeEddie v1.0.4**。普通用户可直接下载安装程序。需要运行源码版的用户可按第一至第四步操作。
 
 升级保留个人设置、已保存密钥及自定义角色。升级前建议备份个人数据；不要同时运行新旧桌宠。
 
 ## 推荐：使用安装程序
 
-打开 [CodeEddie v1.0.3 下载页](https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate/releases/tag/v1.0.3)，在 **Assets** 中选择 **pet-with-you-1.0.3-x64-setup.exe**。下载后双击，选择安装目录，按需勾选“创建桌面快捷方式”。选中父文件夹后，安装器会在当前目录框显示实际的 `pet-with-you` 子文件夹。已选同名文件夹时会沿用该路径。安装仅针对当前 Windows 用户，默认无需管理员权限。安装完成后从开始菜单或桌面的 **pet-with-u** 启动。默认是纯桌宠模式，右键桌宠可调节大小或打开设置。
+打开 [CodeEddie v1.0.4 下载页](https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate/releases/tag/v1.0.4)，在 **Assets** 中选择 **pet-with-you-1.0.4-x64-setup.exe**。下载后双击，选择安装目录，按需勾选“创建桌面快捷方式”。选中父文件夹后，安装器会在当前目录框显示实际的 `pet-with-you` 子文件夹。已选同名文件夹时会沿用该路径。安装仅针对当前 Windows 用户，默认无需管理员权限。安装完成后从开始菜单或桌面的 **pet-with-u** 启动。默认是纯桌宠模式，右键桌宠可调节大小或打开设置。
 
 安装版自带 Electron 与 Node.js 运行环境，日常动画、自有 API 和 Hooks 转发无需另装 Node.js。Codex 账户功能仍需兼容的 Codex 运行程序，详见第七步。安装包目前没有代码签名，Windows 可能显示发布者未验证；请核对下载来源，下载页的 `SHA256SUMS.txt` 提供安装程序校验值。安装包使用系统字体，不附带第三方字体；可在设置中选择或导入自己有权使用的字体。
 

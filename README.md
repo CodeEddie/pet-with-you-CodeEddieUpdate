@@ -4,7 +4,7 @@
 
 这是 CodeEddie 在 [Refining-colors/pet-with-you](https://github.com/Refining-colors/pet-with-you) 基础上整理的衍生版本。基于上游 [v1.0.2](https://github.com/Refining-colors/pet-with-you/releases/tag/v1.0.2) 及 [main 提交 `c65b97d0`](https://github.com/Refining-colors/pet-with-you/commit/c65b97d0ebe96e1a4cafa71f0d520a66a7150e48)。角色和 106 段连续动画来自原作 [PC2005-cloud/dsh-pet](https://github.com/PC2005-cloud/dsh-pet)。代码采用 MIT，角色与动画保留原作署名和非商用条件。详见 [来源与致谢](ATTRIBUTION.md)、[LICENSE](LICENSE) 和 [LICENSE.upstream](LICENSE.upstream)。
 
-**当前源码：CodeEddie v1.0.4** · **Windows 10/11 x64 安装包：** [下载 CodeEddie v1.0.3](https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate/releases/tag/v1.0.3)
+**Windows 10/11 x64 安装包：** [下载 CodeEddie v1.0.4](https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate/releases/tag/v1.0.4)
 
 ## CodeEddie 版升级点
 
@@ -12,7 +12,7 @@
 
 - 右键调节大肥鱼尺寸时，输入框、回复、任务卡片、进度与错误提示，以及视频草稿操作区的字号会同步缩放。默认尺寸沿用原字号。
 - 已打开的对话会立即调整布局，保留正在编辑的文字和选区，无需关闭重开。
-- 此修复已纳入源码版；当前可下载的安装包仍为 v1.0.3。完整记录见 [CHANGELOG](CHANGELOG.md)。
+- 支持沿用 v1.0.3 的安装目录覆盖升级。完整记录见 [CHANGELOG](CHANGELOG.md)。
 
 ### v1.0.3 · 首个 CodeEddie Windows 安装版
 
@@ -89,7 +89,7 @@
 
 ### 安装 CodeEddie 版
 
-1. 从 [v1.0.3 发布页](https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate/releases/tag/v1.0.3) 下载 **pet-with-you-1.0.3-x64-setup.exe**。
+1. 从 [v1.0.4 发布页](https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate/releases/tag/v1.0.4) 下载 **pet-with-you-1.0.4-x64-setup.exe**。
 2. 已有桌宠的用户先从托盘退出，再运行安装程序并沿用原安装目录。
 3. 从桌面或开始菜单的 **pet-with-u** 启动，右键打开设置。
 
