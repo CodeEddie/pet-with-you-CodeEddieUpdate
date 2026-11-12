@@ -4,9 +4,17 @@
 
 这是 CodeEddie 在 [Refining-colors/pet-with-you](https://github.com/Refining-colors/pet-with-you) 基础上整理的衍生版本。基于上游 [v1.0.2](https://github.com/Refining-colors/pet-with-you/releases/tag/v1.0.2) 及 [main 提交 `c65b97d0`](https://github.com/Refining-colors/pet-with-you/commit/c65b97d0ebe96e1a4cafa71f0d520a66a7150e48)。角色和 106 段连续动画来自原作 [PC2005-cloud/dsh-pet](https://github.com/PC2005-cloud/dsh-pet)。代码采用 MIT，角色与动画保留原作署名和非商用条件。详见 [来源与致谢](ATTRIBUTION.md)、[LICENSE](LICENSE) 和 [LICENSE.upstream](LICENSE.upstream)。
 
-**Windows 10/11 x64 安装包** [下载 CodeEddie v1.0.3](https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate/releases/tag/v1.0.3)
+**当前源码：CodeEddie v1.0.4** · **Windows 10/11 x64 安装包：** [下载 CodeEddie v1.0.3](https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate/releases/tag/v1.0.3)
 
 ## CodeEddie 版升级点
+
+### v1.0.4 · 对话字号跟随桌宠尺寸
+
+- 右键调节大肥鱼尺寸时，输入框、回复、任务卡片、进度与错误提示，以及视频草稿操作区的字号会同步缩放。默认尺寸沿用原字号。
+- 已打开的对话会立即调整布局，保留正在编辑的文字和选区，无需关闭重开。
+- 此修复已纳入源码版；当前可下载的安装包仍为 v1.0.3。完整记录见 [CHANGELOG](CHANGELOG.md)。
+
+### v1.0.3 · 首个 CodeEddie Windows 安装版
 
 | 功能 | 相比上游 1.0.2 的变化 |
 | --- | --- |
@@ -14,6 +22,7 @@
 | 工作动画轮换 | 思考、执行、整理、等待、完成、异常共 17 个候选入口，直接复用随附的原版连续视频。持续状态可在同一档内轮换，完成和异常短播。动画和调度在本机执行。 |
 | 失效任务卡片 | 通过只读的 Codex 本地会话索引过滤明确无法恢复的任务，避免点击卡片后出现 `no rollout found for thread id`。索引不可用时保留原有兼容行为。 |
 | 抖音评论草稿 | 右键桌宠选择“发给大肥鱼看”，根据标题、字幕、分享文字或本地视频生成可复制草稿。视频处理可提取字幕、语音和画面，输出会标注依据。链接读取和转录需要相应组件，草稿由用户自行复制使用。见 [视频草稿配置](docs/VIDEO_DRAFT.md)。 |
+| 安装与运行环境 | 发布 Windows x64 安装包，支持沿用上游 v1.0.2 的原目录覆盖升级。Electron 更新至 45.3.0，并修复发布审计发现的高危依赖问题。见 [v1.0.3 发布说明](https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate/releases/tag/v1.0.3)。 |
 
 默认角色的场景与轮换由 [enhancement-config.js](runtime/enhancement-config.js) 控制。可调整 `sceneIntervalSec`，或设为 `enabled: false` 后重启桌宠。其余自定义角色按各自的配置播放。
 

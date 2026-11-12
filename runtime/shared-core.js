@@ -995,16 +995,17 @@ async function sendVideoDraft(baseUrl, input, signal, onProgress) {
 const CHAT_CSS = [
 	".dsh-pet-chat{position:fixed;z-index:2147483001;width:160px;max-width:80vw;",
 	"background:rgba(255,255,255,.98);border:1px solid rgba(0,0,0,.12);border-radius:10px;",
-	"box-shadow:0 10px 32px rgba(0,0,0,.22);color:#2b2b2b;font-size:14px;line-height:1.5;",
+	"box-shadow:0 10px 32px rgba(0,0,0,.22);color:#2b2b2b;font-size:var(--pet-dialog-font-size,14px);line-height:1.5;",
 	"font-family:'ShangshouSoftCandy','Yuanti SC','YouYuan','幼圆','Comic Sans MS','PingFang SC','Microsoft YaHei',sans-serif;",
 	"user-select:none}",
 	".dsh-pet-chat *{box-sizing:border-box}",
 	".dsh-pet-chat-input{display:block;width:100%;border:none;outline:none;background:transparent;",
-	"padding:8px 11px 9px;font-size:14px;line-height:1.45;color:#2b2b2b;font-family:inherit;",
+	"padding:8px 11px 9px;font-size:inherit;line-height:1.45;color:#2b2b2b;font-family:inherit;",
 	"resize:none;overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere}",
 	".dsh-pet-chat-input::placeholder{color:rgba(43,43,43,.45)}",
 	".dsh-pet-chat-input:disabled{opacity:.55}",
-	".dsh-pet-chat-err{color:#d94f3d;font-size:12px;padding:0 12px 8px;white-space:pre-wrap;overflow-wrap:anywhere}",
+	".dsh-pet-chat button{font-family:inherit;font-size:.9em}",
+	".dsh-pet-chat-err{color:#d94f3d;font-size:.86em;padding:0 12px 8px;white-space:pre-wrap;overflow-wrap:anywhere}",
 	".dsh-pet-chat-progress{padding:8px 12px;white-space:pre-wrap;overflow-wrap:anywhere;user-select:text;max-height:40vh;overflow:auto;border-top:1px solid #dce6ed;color:#284957}"
 ].join("");
 /** 输入框宽度自适应参数：初始小宽 → 随文本增宽 → 封顶后折行增高 */
@@ -1047,14 +1048,14 @@ function mountChatDialog(opts) {
 		return ctx.measureText(text).width;
 	};
 	const resizeInput = () => {
-		const textW = measureText(input.value || " ");
-		const w = commentDraft ? Math.min(CHAT_MAX_W, c.w - 8) : Math.max(CHAT_MIN_W, Math.min(Math.ceil(textW + CHAT_H_PAD), CHAT_MAX_W));
+		const maxWidth = Math.max(1, Math.min(CHAT_MAX_W, c.w - 8));
+		const textWidth = Math.ceil(measureText(input.value || " ") + CHAT_H_PAD);
+		const w = commentDraft || input.disabled ? maxWidth : Math.min(maxWidth, Math.max(CHAT_MIN_W, textWidth));
 		root.style.width = w + "px";
 		input.style.height = "auto";
 		input.style.height = (commentDraft ? Math.min(108, Math.max(input.scrollHeight, 76)) : Math.max(input.scrollHeight, 22)) + "px";
 	};
 	input.addEventListener("input", resizeInput);
-	resizeInput();
 	const err = document.createElement("div");
 	err.className = "dsh-pet-chat-err";
 	err.style.display = "none";
@@ -1096,7 +1097,7 @@ function mountChatDialog(opts) {
 		basis = document.createElement("div");
 		basis.hidden = true;
 		basis.setAttribute("role","status");
-		basis.style.cssText = "padding:0 11px 6px;color:#526978;font-size:12px";
+		basis.style.cssText = "padding:0 11px 6px;color:#526978;font-size:.86em";
 		actions.append(generate, quick);
 		if (window.petBridge?.videoPath) {
 			const picker = document.createElement("input");
@@ -1162,14 +1163,18 @@ function mountChatDialog(opts) {
 	root.appendChild(progress);
 	root.appendChild(err);
 	document.body.appendChild(root);
-	resizeInput();
 	const position = () => {
 		const rect = root.getBoundingClientRect();
 		root.style.left = Math.max(c.x + 4, Math.min(x, c.x + c.w - rect.width - 4)) + "px";
 		root.style.top = Math.max(c.y + 4, Math.min(y, c.y + c.h - rect.height - 4)) + "px";
 		if (onBounds) onBounds(root.getBoundingClientRect());
 	};
-	position();
+	const setPetSize = size => {
+		root.style.setProperty("--pet-size", size + "px");
+		resizeInput();
+		position();
+	};
+	setPetSize(opts.petSize ?? PET_REF_WIDTH);
 	if (commentDraft) input.addEventListener("input", position);
 	let closed = false;
 	let sending = false;
@@ -1285,7 +1290,8 @@ function mountChatDialog(opts) {
 	input.focus();
 	return {
 		el: root,
-		close
+		close,
+		setPetSize
 	};
 }
 

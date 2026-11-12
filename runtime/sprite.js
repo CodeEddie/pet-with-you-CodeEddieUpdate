@@ -1096,6 +1096,8 @@ class PetSprite {
     this.updateSizeLayout();
     this.space=null;
     this.sendBounds(this.pos.x,this.pos.y);
+    this.resizeChat?.(this.size);
+    if (!this.bubble.hidden) this.renderBubble();
     this.rememberSizePosition();
   }
 
@@ -1303,6 +1305,7 @@ class PetSprite {
     }
     const m = S.mountChatDialog({
       petId: this.pet.id,
+      petSize: this.size,
       baseUrl: BASE + '/chat',
       commentDraft,
       onBounds: commentDraft ? r => window.petBridge?.setDraftRect({x:toScreen(r.x),y:toScreen(r.y),width:toScreen(r.width),height:toScreen(r.height)}) : undefined,
@@ -1315,6 +1318,7 @@ class PetSprite {
       },
       onClose: () => {
         this.chatClose = null;
+        this.resizeChat = null;
         this.chatOpen = false;
         if (commentDraft) window.petBridge?.setDraftRect(null);
         this.draftDialog = null;
@@ -1324,6 +1328,7 @@ class PetSprite {
       },
     });
     this.chatClose = m.close;
+    this.resizeChat = m.setPetSize;
     this.draftDialog = commentDraft ? m.el : null;
     this.chatOpen = true; // 穿透守卫：弹窗期间整窗保持可交互，光标移到输入框不被翻回穿透
     window.__dshPetDebug.chatOpen = true;

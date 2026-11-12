@@ -1,6 +1,6 @@
 # 打包、安装与更新
 
-本次版本为 **CodeEddie v1.0.3**。代码采用 MIT，角色素材遵循原作许可，详见 [来源与致谢](../ATTRIBUTION.md)。[公开下载页面](https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate/releases/tag/v1.0.3)提供 EXE、校验文件和简明安装说明。
+当前源码为 **CodeEddie v1.0.4**。[公开安装包 v1.0.3](https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate/releases/tag/v1.0.3)提供 EXE、校验文件和简明安装说明。代码采用 MIT，角色素材遵循原作许可，详见 [来源与致谢](../ATTRIBUTION.md)。
 
 `0.1.0-alpha.7.1.1` 修正目录页即时预览、欢迎／完成页角色图、高分屏字体和快捷方式图标刷新。
 
@@ -30,7 +30,7 @@ npm run audit:source
 npm run dist:win
 ```
 
-构建输出为 `dist/pet-with-you-1.0.3-x64-setup.exe`，另有 `dist/win-unpacked/` 便于检查。构建命令使用 `--publish never`。
+构建输出为 `dist/pet-with-you-<版本>-x64-setup.exe`，其中版本号取自 `package.json`。另有 `dist/win-unpacked/` 便于检查。构建命令使用 `--publish never`。
 
 推送正式版本标签会启动 **Windows release** 工作流。构建任务在临时 Windows runner 上运行自动测试、源码与包体审计，并验证新装、上游 1.0.2 覆盖升级和卸载。验收通过后，发布任务上传 EXE、SHA-256 和安装说明，并公开该版本。
 

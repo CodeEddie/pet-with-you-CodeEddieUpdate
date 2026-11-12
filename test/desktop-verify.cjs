@@ -195,6 +195,8 @@ module.exports=async function verify({service,openSettings,getSettings,largeTray
     await request('/preferences',{replyMode:'timed',replySeconds:1});
     console.error('VERIFY_STAGE: reply-verify.cjs');
     await require('./reply-verify.cjs')(pet());
+      console.error('VERIFY_STAGE: chat-size-verify.cjs');
+      await require('./chat-size-verify.cjs')(pet());
     console.error('VERIFY_STAGE: whisper-verify.cjs');
     await require('./whisper-verify.cjs')({settings,service,pet:pet(),dir});
     console.error('VERIFY_STAGE: streaming-verify.cjs');
