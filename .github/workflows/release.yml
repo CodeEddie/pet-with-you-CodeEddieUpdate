@@ -31,7 +31,7 @@ jobs:
         shell: pwsh
         run: |
           $package = Get-Content package.json -Raw | ConvertFrom-Json
-          $lock = Get-Content package-lock.json -Raw | ConvertFrom-Json
+          $lock = Get-Content package-lock.json -Raw | ConvertFrom-Json -AsHashtable
           if ($env:RELEASE_TAG -cnotmatch '^v[0-9]+\.[0-9]+\.[0-9]+$' -or
               $env:RELEASE_TAG -cne "v$($package.version)" -or $lock.version -ne $package.version) {
             throw 'Release tag, package and lock versions must match.'
