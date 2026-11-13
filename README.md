@@ -4,7 +4,7 @@
 
 这是 CodeEddie 在 [Refining-colors/pet-with-you](https://github.com/Refining-colors/pet-with-you) 基础上整理的衍生版本。基于上游 [v1.0.2](https://github.com/Refining-colors/pet-with-you/releases/tag/v1.0.2) 及 [main 提交 `c65b97d0`](https://github.com/Refining-colors/pet-with-you/commit/c65b97d0ebe96e1a4cafa71f0d520a66a7150e48)。角色和 106 段连续动画来自原作 [PC2005-cloud/dsh-pet](https://github.com/PC2005-cloud/dsh-pet)。代码采用 MIT，角色与动画保留原作署名和非商用条件。详见 [来源与致谢](ATTRIBUTION.md)、[LICENSE](LICENSE) 和 [LICENSE.upstream](LICENSE.upstream)。
 
-**当前源码 v1.0.5** · [下载 Windows 10/11 x64 安装包 v1.0.4](https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate/releases/tag/v1.0.4)
+[下载 Windows 10/11 x64 安装包 v1.0.5](https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate/releases/tag/v1.0.5)
 
 ## CodeEddie 版升级点
 
@@ -94,7 +94,7 @@
 
 ### 安装 CodeEddie 版
 
-1. 从 [v1.0.4 发布页](https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate/releases/tag/v1.0.4) 下载 **pet-with-you-1.0.4-x64-setup.exe**。
+1. 从 [v1.0.5 发布页](https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate/releases/tag/v1.0.5) 下载 **pet-with-you-1.0.5-x64-setup.exe**。
 2. 已有桌宠的用户先从托盘退出，再运行安装程序并沿用原安装目录。
 3. 从桌面或开始菜单的 **pet-with-u** 启动，右键打开设置。
 

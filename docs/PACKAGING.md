@@ -1,6 +1,8 @@
 # 打包、安装与更新
 
-当前源码为 **CodeEddie v1.0.5**。[公开安装包 v1.0.4](https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate/releases/tag/v1.0.4)提供 EXE、校验文件和简明安装说明。代码采用 MIT，角色素材遵循原作许可，详见 [来源与致谢](../ATTRIBUTION.md)。
+当前版本为 **CodeEddie v1.0.5**。发布页提供 EXE、校验文件和简明安装说明。[公开安装包 v1.0.5](https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate/releases/tag/v1.0.5)
+
+代码采用 MIT，角色素材遵循原作许可。[来源与致谢](../ATTRIBUTION.md)
 
 `0.1.0-alpha.7.1.1` 修正目录页即时预览、欢迎／完成页角色图、高分屏字体和快捷方式图标刷新。
 
