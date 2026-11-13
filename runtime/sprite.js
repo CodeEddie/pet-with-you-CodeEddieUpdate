@@ -238,7 +238,7 @@ class PetSprite {
   // 主进程侧（bounds/去重/碰撞 broker）完全不用改。
   sendBounds(px, py) {
     const snapped=this.snapPosition(px,py);px=snapped.x;py=snapped.y;
-    this.pos = this.menuFrame ? {x:px,y:py} : { x: Math.round(px), y: Math.round(py) };
+    this.pos = this.menuFrame ? {x:px,y:py} : { x: Math.round(px), y: snapped.alignFeet ? py : Math.round(py) };
     window.__dshPetDebug.dragPos = { x: this.pos.x, y: this.pos.y };
     if (window.petBridge) {
       // 完整状态一次捎带：size/bottomPad 让静止宠物从首帧起就登记进碰撞站场
@@ -302,7 +302,7 @@ class PetSprite {
     if(this.menuFrame||mode==='none'||this.dragState.active||this.throwRef!==null)return {x,y};
     const targets=[];
     if(mode==='all'||mode==='bottom')PANELS.forEach((r,i)=>targets.push({id:'screen-'+i,x:r.x,y:r.y+r.height,width:r.width,top:r.y}));
-    if(mode==='all'||mode==='taskbar')AREAS.forEach((r,i)=>targets.push({id:'work-'+i,x:r.x,y:r.y+r.height,width:r.width,top:r.y}));
+    if(mode==='all'||mode==='taskbar')AREAS.forEach((r,i)=>targets.push({id:'work-'+i,x:r.x,y:r.y+r.height,width:r.width,top:r.y,alignFeet:true}));
     if(mode==='all'||mode==='gpt')targets.push(...this.snapTargets);
     const result=window.PetSnap.snapPosition({x,y,width:this.size,height:this.height,canvasHeight:this.winH,targets,attachment:this.snapAttachment,gap:Math.max(3,this.height*0.025)});
     this.snapAttachment=result.attachment;
@@ -784,7 +784,6 @@ class PetSprite {
 
   // ---- 点击 vs 拖拽（与浏览器一致：阈值/抓取偏移/释放回循环待机；移动的是窗口） ----
   onPointerDown(e) {
-    this.snapAttachment=null;
     // 只认左键：右键进入拖拽判定会与右键菜单打架（右键不拖拽，两端一致）
     if (e.button !== 0) return;
     // 抓取速度日志：stopThrow 之前读，否则飞行速度就没了；静止时记录 0（与浏览器同构）
@@ -870,6 +869,7 @@ class PetSprite {
     if (!d.dragging) {
       if (Math.hypot(dx, dy) < S.DRAG_THRESHOLD) return;
       d.dragging = true;
+      this.snapAttachment=null;
       this.manualPlaying = false;
       // 真正开始拖拽才把舞台拍平（人物随光标拿起；与浏览器 dragging 语义一致）
       this.stage.style.transform = 'none';

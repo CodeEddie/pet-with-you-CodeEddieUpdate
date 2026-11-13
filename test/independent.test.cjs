@@ -75,6 +75,30 @@ test('snap respects separate screens, gaps and full animation canvas, keeps hori
   assert.equal(snapPosition({...input,attachment:'work',targets:[{...target,y:800}]}).y,513);
   assert.equal(snapPosition({...input,attachment:'work',targets:[]}).attachment,null);
 });
+test('taskbar snap aligns feet and recognizes positions saved with the old canvas clearance',()=>{
+  const taskbar={id:'work',x:-1920,y:1040,width:1920,top:0,alignFeet:true};
+  const input={x:-900,width:460,height:259,canvasHeight:281,gap:6};
+  const atFeet=snapPosition({...input,y:790,targets:[taskbar]});
+  assert.deepEqual(atFeet,{x:-900,y:781,attachment:'work',alignFeet:true});
+  assert.deepEqual(snapPosition({...input,y:730,targets:[taskbar]}),atFeet);
+  assert.equal(snapPosition({...input,y:710,targets:[taskbar]}).attachment,null);
+  assert.equal(snapPosition({...input,y:790,targets:[{...taskbar,id:'gpt',alignFeet:false}]}).y+281,1034);
+});
+test('taskbar wins over competing edges near the feet at every supported size',()=>{
+  const taskbar={id:'work-1',x:1920,y:1140,width:1920,top:0,alignFeet:true};
+  const screen={...taskbar,id:'screen-1',y:1200,alignFeet:false};
+  const gpt={...taskbar,id:'gpt-fixture',y:1120,alignFeet:false};
+  for(const width of [180,213,462,650,900]){
+    const height=width*9/16;
+    const canvasHeight=height+width*30/640;
+    const gap=Math.max(3,height*.025);
+    for(const distance of [-12,0,28]){
+      const result=snapPosition({x:2850-width/2,y:taskbar.y-height+distance,width,height,canvasHeight,gap,targets:[screen,gpt,taskbar]});
+      assert.equal(result.attachment,taskbar.id);
+      assert.equal(result.y+height,taskbar.y);
+    }
+  }
+});
 test('client lifecycle ignores pure mode, disabled switches and detection errors',()=>{
   const l=new (require('../client-lifecycle.cjs').ClientLifecycle)();
   const p={mode:'connected',followClientClose:true};

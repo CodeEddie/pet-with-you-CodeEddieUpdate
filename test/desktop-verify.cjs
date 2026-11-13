@@ -127,8 +127,24 @@ module.exports=async function verify({service,openSettings,getSettings,largeTray
     assert.equal((await getMode()).clientVisible,false);
     assert.deepEqual(await pet().webContents.executeJavaScript('sprites[0].pos'),stored);
     await request('/preferences',{snapMode:'taskbar'});await sleep(200);
-    const snap=await pet().webContents.executeJavaScript(`(()=>{const s=sprites[0];s.stopMove();s.stopThrow();s.snapAttachment=null;const a=AREAS[0];s.sendBounds(a.x+a.width/2-s.halfW,a.y+a.height-s.height-10);return {bottom:s.pos.y+s.winH,edge:a.y+a.height,attached:s.snapAttachment};})()`);
-    assert.ok(snap.attached);assert.ok(snap.bottom<snap.edge);
+    const snap=await pet().webContents.executeJavaScript(`(()=>{
+      const s=sprites[0],a=AREAS[0],edge=a.y+a.height;
+      const savedThrow=window.petPreferences.disableThrow;
+      window.petPreferences.disableThrow=true;
+      s.stopMove();s.stopThrow();s.snapAttachment=null;
+      s.sendBounds(a.x+a.width/2-s.halfW,edge-s.height-70);
+      const downY=toScreen(VIEW.y+edge-90),upY=downY+toScreen(65);
+      const screenX=toScreen(VIEW.x+a.x+a.width/2);
+      s.onPointerDown({button:0,pointerId:1,screenX,screenY:downY});
+      s.onPointerMove({screenX,screenY:upY});
+      const during=s.snapAttachment;
+      s.onPointerUp({screenX,screenY:upY});
+      window.petPreferences.disableThrow=savedThrow;
+      return {feet:s.pos.y+s.height,edge,attached:s.snapAttachment,during};
+    })()`);
+    assert.equal(snap.during,null);
+    assert.match(snap.attached,/^work-/);
+    assert.ok(Math.abs(snap.feet-snap.edge)<=0.5);
     const gpt=await pet().webContents.executeJavaScript(`(()=>{const s=sprites[0];s.snapAttachment=null;window.petPreferences.snapMode='gpt';const t={id:'fixture',x:toScreen(VIEW.x+100),y:toScreen(VIEW.y+100),width:toScreen(1200),height:toScreen(600)};s.setSnapTarget([t]);s.sendBounds(400,700-s.height-10);const first=s.pos.y+s.winH;s.setSnapTarget([{...t,y:t.y+toScreen(50)}]);const second=s.pos.y+s.winH;s.setSnapTarget([]);return {first,second,detached:s.snapAttachment===null};})()`);
     assert.ok(gpt.first<700&&gpt.second<750);assert.equal(gpt.second-gpt.first,50);assert.equal(gpt.detached,true);
     await settings.webContents.executeJavaScript(`document.querySelector('#disableRoaming').checked=true;document.querySelector('#disableRoaming').onchange()`);await sleep(200);

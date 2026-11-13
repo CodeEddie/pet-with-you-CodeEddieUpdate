@@ -4,9 +4,14 @@
 
 这是 CodeEddie 在 [Refining-colors/pet-with-you](https://github.com/Refining-colors/pet-with-you) 基础上整理的衍生版本。基于上游 [v1.0.2](https://github.com/Refining-colors/pet-with-you/releases/tag/v1.0.2) 及 [main 提交 `c65b97d0`](https://github.com/Refining-colors/pet-with-you/commit/c65b97d0ebe96e1a4cafa71f0d520a66a7150e48)。角色和 106 段连续动画来自原作 [PC2005-cloud/dsh-pet](https://github.com/PC2005-cloud/dsh-pet)。代码采用 MIT，角色与动画保留原作署名和非商用条件。详见 [来源与致谢](ATTRIBUTION.md)、[LICENSE](LICENSE) 和 [LICENSE.upstream](LICENSE.upstream)。
 
-**Windows 10/11 x64 安装包：** [下载 CodeEddie v1.0.4](https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate/releases/tag/v1.0.4)
+**当前源码 v1.0.5** · [下载 Windows 10/11 x64 安装包 v1.0.4](https://github.com/CodeEddie/pet-with-you-CodeEddieUpdate/releases/tag/v1.0.4)
 
 ## CodeEddie 版升级点
+
+### v1.0.5 · 大肥鱼按尺寸贴合任务栏
+
+- 拖到任务栏附近松手时，按当前尺寸计算待机脚底，对齐所在屏幕的任务栏上沿。
+- 使用「屏幕、任务栏和 GPT 窗口」吸附模式时，脚底靠近任务栏会优先吸附到任务栏。打开尺寸菜单或轻点桌宠时保留当前吸附位置。
 
 ### v1.0.4 · 对话字号跟随桌宠尺寸
 
